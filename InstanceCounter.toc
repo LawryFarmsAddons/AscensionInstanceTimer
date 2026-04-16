@@ -1,0 +1,9 @@
+## Interface: 30300
+## Title: Ascension Instance Counter
+## Notes: Tracks entered instances and counts your Instance limit - Designed for Ascension Card Game Area 52 ver 3.3.5
+## Author: LawryFarms and Shadowsung
+## Version: 1.0 Sigma
+## SavedVariablesPerCharacter: InstanceCounterDB
+
+InstanceCounter.lua
+InstanceCounter.xml

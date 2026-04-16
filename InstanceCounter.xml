@@ -1,0 +1,227 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/ ..\FrameXML\UI.xsd">
+
+  <!-- Main Window -->
+  <Frame name="InstanceCounterMainFrame" parent="UIParent" hidden="true" movable="true">
+<Size>
+  <AbsDimension x="260" y="300"/>
+</Size>
+    <Anchors>
+      <Anchor point="CENTER"/>
+    </Anchors>
+    <Backdrop bgFile="Interface\DialogFrame\UI-DialogBox-Background" edgeFile="Interface\DialogFrame\UI-DialogBox-Border" tile="true">
+      <EdgeSize>
+        <AbsValue val="32"/>
+      </EdgeSize>
+      <TileSize>
+        <AbsValue val="32"/>
+      </TileSize>
+      <BackgroundInsets>
+        <AbsInset left="11" right="12" top="12" bottom="11"/>
+      </BackgroundInsets>
+    </Backdrop>
+    <Layers>
+      <Layer level="ARTWORK">
+        <FontString name="InstanceCounterTitleText" inherits="GameFontNormal" text="Instance Counter">
+          <Anchors>
+            <Anchor point="TOP">
+              <Offset>
+                <AbsDimension x="0" y="-16"/>
+              </Offset>
+            </Anchor>
+          </Anchors>
+        </FontString>
+        <FontString name="InstanceCounterSessionText" inherits="GameFontHighlight" text="Session: 0">
+          <Anchors>
+            <Anchor point="TOP" relativeTo="InstanceCounterTitleText" relativePoint="BOTTOM">
+              <Offset>
+                <AbsDimension x="0" y="-4"/>
+              </Offset>
+            </Anchor>
+          </Anchors>
+        </FontString>
+      </Layer>
+    </Layers>
+    <Frames>
+<!-- Scrolling list of instances -->
+<ScrollFrame name="InstanceCounterScrollFrame" inherits="UIPanelScrollFrameTemplate">
+  <Size>
+    <AbsDimension x="240" y="200"/>
+  </Size>
+  <Anchors>
+    <Anchor point="TOPLEFT">
+      <Offset>
+        <AbsDimension x="10" y="-40"/>
+      </Offset>
+    </Anchor>
+  </Anchors>
+  <ScrollChild>
+    <Frame name="InstanceCounterScrollChildFrame">
+      <Size>
+        <AbsDimension x="240" y="1"/>
+      </Size>
+      <Anchors>
+        <Anchor point="TOPLEFT"/>
+      </Anchors>
+    </Frame>
+  </ScrollChild>
+</ScrollFrame>
+      <!-- Clear button -->
+      <Button name="InstanceCounterClearButton" inherits="UIPanelButtonTemplate" text="Clear">
+        <Size>
+          <AbsDimension x="80" y="22"/>
+        </Size>
+        <Anchors>
+          <Anchor point="BOTTOM">
+            <Offset>
+              <AbsDimension x="0" y="10"/>
+            </Offset>
+          </Anchor>
+        </Anchors>
+        <Scripts>
+          <OnClick>
+            InstanceCounter_ClearInstances();
+          </OnClick>
+        </Scripts>
+      </Button>
+      <!-- Close button -->
+      <Button name="InstanceCounterCloseButton" inherits="UIPanelCloseButton">
+        <Size>
+          <AbsDimension x="24" y="24"/>
+        </Size>
+        <Anchors>
+          <Anchor point="TOPRIGHT">
+            <Offset>
+              <AbsDimension x="-5" y="-5"/>
+            </Offset>
+          </Anchor>
+        </Anchors>
+        <Scripts>
+          <OnClick>
+            this:GetParent():Hide();
+          </OnClick>
+        </Scripts>
+      </Button>
+    </Frames>
+     <Scripts>
+       <OnMouseDown>
+         if (arg1 == "LeftButton") then
+           this:StartMoving();
+         end
+       </OnMouseDown>
+       <OnMouseUp>
+         this:StopMovingOrSizing();
+       </OnMouseUp>
+       <OnUpdate>
+         InstanceCounter_UpdateDisplay();
+       </OnUpdate>
+     </Scripts>
+  </Frame>
+
+  <!-- Minimap Button -->
+  <Button name="InstanceCounterMinimapButton" parent="Minimap" frameStrata="LOW">
+    <Size>
+      <AbsDimension x="32" y="32"/>
+    </Size>
+    <Anchors>
+      <Anchor point="TOPLEFT" relativeTo="Minimap" relativePoint="TOPLEFT">
+        <Offset>
+          <AbsDimension x="10" y="-10"/>
+        </Offset>
+      </Anchor>
+    </Anchors>
+    <Layers>
+      <Layer level="BACKGROUND">
+        <Texture name="$parentIcon" file="Interface\Icons\INV_Misc_QuestionMark">
+          <Size>
+            <AbsDimension x="20" y="20"/>
+          </Size>
+          <Anchors>
+            <Anchor point="CENTER"/>
+          </Anchors>
+        </Texture>
+      </Layer>
+    </Layers>
+    <Scripts>
+      <OnLoad>
+        -- Make the button movable by left-click dragging
+        this:SetMovable(true);
+        this:EnableMouse(true);
+        this:RegisterForDrag("LeftButton");
+        this:SetScript("OnDragStart", function()
+          this:StartMoving();
+        end);
+        this:SetScript("OnDragStop", function()
+          this:StopMovingOrSizing();
+        end);
+      </OnLoad>
+      <OnClick>
+        if (InstanceCounterMainFrame:IsShown()) then
+          InstanceCounterMainFrame:Hide();
+        else
+          InstanceCounterMainFrame:Show();
+          InstanceCounter_UpdateDisplay();
+        end
+      </OnClick>
+      <OnEnter>
+        GameTooltip:SetOwner(this, "ANCHOR_LEFT");
+        GameTooltip:SetText("Instance Counter");
+        
+        -- Show last 5 instances with timestamps
+        if #InstanceCounterDB.history > 0 then
+          GameTooltip:AddLine("Last 5 instances:", 1, 1, 1);
+          local startIndex = math.max(1, #InstanceCounterDB.history - 4);
+          for i = startIndex, #InstanceCounterDB.history do
+            local entry = InstanceCounterDB.history[i];
+            local timeString = date("%H:%M", entry.time);
+            GameTooltip:AddDoubleLine(
+              string.format("%d. [%s]", i - startIndex + 1, timeString),
+              entry.name or "Unknown",
+              1, 1, 1,
+              1, 1, 1
+            );
+          end
+        else
+          GameTooltip:AddLine("No instances recorded yet.", 0.6, 0.6, 0.6);
+        end
+        
+        -- Add timer information
+        GameTooltip:AddLine(" ");
+        GameTooltip:AddLine("Timer Info:", 1, 0.8, 0);
+        if #InstanceCounterDB.history >= 5 then
+          local fifthEntry = InstanceCounterDB.history[#InstanceCounterDB.history - 4]; -- 5th from last
+          local entryTime = fifthEntry.time;
+          local currentTime = time();
+          local elapsed = currentTime - entryTime;
+          local remaining = 3600 - elapsed; -- 1 hour in seconds
+          
+          if remaining > 0 then
+            local hours = math.floor(remaining / 3600);
+            local minutes = math.floor((remaining % 3600) / 60);
+            local seconds = remaining % 60;
+            GameTooltip:AddDoubleLine(
+              "Next instance available in:",
+              string.format("%02d:%02d:%02d", hours, minutes, seconds),
+              1, 0.3, 0.3, -- Red color
+              1, 0.3, 0.3
+            );
+          else
+            GameTooltip:AddDoubleLine(
+              "Status:",
+              "You may enter a new instance",
+              0.3, 1, 0.3, -- Green color
+              0.3, 1, 0.3
+            );
+          end
+        else
+          GameTooltip:AddLine("Need 5 instances to start timer", 0.6, 0.6, 0.6);
+        end
+        
+        GameTooltip:Show();
+      </OnEnter>
+      <OnLeave>
+        GameTooltip:Hide();
+      </OnLeave>
+    </Scripts>
+  </Button>
+
+</Ui>

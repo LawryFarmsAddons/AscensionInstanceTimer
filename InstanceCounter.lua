@@ -188,7 +188,6 @@ InstanceCounter_UpdateDisplay = function()
             checkbox:SetSize(16, 16)
             checkbox:SetScript("OnClick", function()
                 InstanceCounter_ToggleInstanceSelection(i)
-                PlaySound("IG_MAINMENU_OPTION_CHECKBOX_ON")
             end)
             line.checkbox = checkbox
             

@@ -17,6 +17,57 @@ local sessionCount = 0
 local wasInInstance = false
 local currentInstanceID = nil
 
+-- Function to check if instance is from Random Dungeon Finder
+function IsRDFInstance(instanceName, difficultyID)
+    if not instanceName then return false end
+    local rdfKeywords = {
+        ["Random"] = true,
+        ["RDF"] = true,
+    }
+    for keyword in pairs(rdfKeywords) do
+        if string.find(instanceName, keyword, 1, true) then
+            return true
+        end
+    end
+    return false
+end
+
+-- Function to get color based on elapsed time
+local function GetTimeColor(entryTime)
+    local currentTime = time()
+    local elapsed = currentTime - entryTime
+    local elapsedMinutes = elapsed / 60
+    
+    if elapsedMinutes < 20 then
+        return 1, 0.6, 0, 1
+    elseif elapsedMinutes < 40 then
+        return 1, 1, 0, 1
+    elseif elapsedMinutes < 60 then
+        return 0.3, 1, 0.3, 1
+    else
+        return 0.5, 0.5, 0.5, 1
+    end
+end
+
+-- Function to check if instance is approved
+local function IsInstanceApproved(entry)
+    return entry.approved == true
+end
+
+-- Function to approve an instance
+InstanceCounter_ApproveInstance = function(index)
+    if InstanceCounterDB.history[index] then
+        InstanceCounterDB.history[index].approved = true
+        InstanceCounter_UpdateDisplay()
+    end
+end
+
+-- Function to remove an instance
+InstanceCounter_RemoveInstance = function(index)
+    tremove(InstanceCounterDB.history, index)
+    InstanceCounter_UpdateDisplay()
+end
+
 -- Function to update the display
 InstanceCounter_UpdateDisplay = function()
     -- Get the main frame and its children
@@ -97,9 +148,24 @@ InstanceCounter_UpdateDisplay = function()
                 line:SetPoint("TOPLEFT", lines[i-1], "BOTTOMLEFT", 0, -2)
             end
         end
-        local timeString = date("%H:%M:%S", entry.time)
-        line:SetText(string.format("%d. [%s] %s", i, timeString, entry.name or "Unknown"))
-        line:Show()
+        -- Skip RDF instances from display in main window
+        if IsRDFInstance(entry.name, entry.difficultyID) then
+            line:Hide()
+        else
+            local timeString = date("%H:%M:%S", entry.time)
+            line:SetText(string.format("%d. [%s] %s", i, timeString, entry.name or "Unknown"))
+            
+            -- Apply color coding based on time elapsed
+            local r, g, b, a = GetTimeColor(entry.time)
+            line:SetTextColor(r, g, b, a)
+            
+            -- Add approval indicator if approved
+            if IsInstanceApproved(entry) then
+                line:SetText(line:GetText() .. " ✓")
+            end
+            
+            line:Show()
+        end
         height = height + line:GetHeight() + 2
     end
     -- Hide extra lines

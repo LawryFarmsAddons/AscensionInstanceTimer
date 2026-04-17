@@ -65,25 +65,30 @@
     </Frame>
   </ScrollChild>
 </ScrollFrame>
-      <!-- Clear button -->
-      <Button name="InstanceCounterClearButton" inherits="UIPanelButtonTemplate" text="Clear">
-        <Size>
-          <AbsDimension x="80" y="22"/>
-        </Size>
-        <Anchors>
-          <Anchor point="BOTTOM">
-            <Offset>
-              <AbsDimension x="0" y="10"/>
-            </Offset>
-          </Anchor>
-        </Anchors>
-        <Scripts>
-          <OnClick>
-            InstanceCounter_ClearInstances();
-          </OnClick>
-        </Scripts>
-      </Button>
-      <!-- Close button -->
+       <!-- Clear button -->
+       <Button name="InstanceCounterClearButton" inherits="UIPanelButtonTemplate" text="Clear">
+         <Size>
+           <AbsDimension x="80" y="22"/>
+         </Size>
+         <Anchors>
+           <Anchor point="BOTTOM">
+             <Offset>
+               <AbsDimension x="-85" y="10"/>
+             </Offset>
+           </Anchor>
+         </Anchors>
+         <Scripts>
+           <OnClick>
+             InstanceCounter_ClearInstances();
+           </OnClick>
+         </Scripts>
+       </Button>
+       
+       <!-- Approve button for each instance (will be dynamically created) -->
+       
+       <!-- Remove button for each instance (will be dynamically created) -->
+       
+       <!-- Close button -->
       <Button name="InstanceCounterCloseButton" inherits="UIPanelCloseButton">
         <Size>
           <AbsDimension x="24" y="24"/>
@@ -131,7 +136,7 @@
     </Anchors>
     <Layers>
       <Layer level="BACKGROUND">
-        <Texture name="$parentIcon" file="Interface\Icons\INV_Misc_QuestionMark">
+        <Texture name="$parentIcon" file="Interface\Icons\inv_inscription_armorscroll01">
           <Size>
             <AbsDimension x="20" y="20"/>
           </Size>
@@ -166,19 +171,27 @@
         GameTooltip:SetOwner(this, "ANCHOR_LEFT");
         GameTooltip:SetText("Instance Counter");
         
-        -- Show last 5 instances with timestamps
+        -- Show last 5 instances with timestamps (skip RDF instances)
         if #InstanceCounterDB.history > 0 then
           GameTooltip:AddLine("Last 5 instances:", 1, 1, 1);
+          local displayedCount = 0
           local startIndex = math.max(1, #InstanceCounterDB.history - 4);
           for i = startIndex, #InstanceCounterDB.history do
             local entry = InstanceCounterDB.history[i];
-            local timeString = date("%H:%M", entry.time);
-            GameTooltip:AddDoubleLine(
-              string.format("%d. [%s]", i - startIndex + 1, timeString),
-              entry.name or "Unknown",
-              1, 1, 1,
-              1, 1, 1
-            );
+            -- Skip RDF instances from tooltip
+            if not IsRDFInstance(entry.name, entry.difficultyID) then
+              local timeString = date("%H:%M", entry.time);
+              GameTooltip:AddDoubleLine(
+                string.format("%d. [%s]", displayedCount + 1, timeString),
+                entry.name or "Unknown",
+                1, 1, 1,
+                1, 1, 1
+              );
+              displayedCount = displayedCount + 1
+            end
+          end
+          if displayedCount == 0 then
+            GameTooltip:AddLine("No instances to display (all RDF)", 0.6, 0.6, 0.6);
           end
         else
           GameTooltip:AddLine("No instances recorded yet.", 0.6, 0.6, 0.6);

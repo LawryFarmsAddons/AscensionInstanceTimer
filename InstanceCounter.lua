@@ -6,6 +6,7 @@ local GetInstanceInfo = GetInstanceInfo
 local time = time
 local date = date
 local tinsert = tinsert
+local tremove = tremove
 local CreateFrame = CreateFrame
 local GetMouseFocus = GetMouseFocus
 
@@ -16,6 +17,7 @@ InstanceCounterDB = InstanceCounterDB or { history = {} }
 local sessionCount = 0
 local wasInInstance = false
 local currentInstanceID = nil
+local selectedInstances = {} -- Track selected instances for deletion
 
 -- Function to check if instance is from Random Dungeon Finder
 function IsRDFInstance(instanceName, difficultyID)
@@ -65,6 +67,33 @@ end
 -- Function to remove an instance
 InstanceCounter_RemoveInstance = function(index)
     tremove(InstanceCounterDB.history, index)
+    InstanceCounter_UpdateDisplay()
+end
+
+-- Function to delete selected instances
+InstanceCounter_DeleteSelectedInstances = function()
+    -- Delete from highest index to lowest to avoid shifting issues
+    local sortedIndices = {}
+    for index, _ in pairs(selectedInstances) do
+        table.insert(sortedIndices, index)
+    end
+    table.sort(sortedIndices, function(a, b) return a > b end)
+    
+    for _, index in ipairs(sortedIndices) do
+        tremove(InstanceCounterDB.history, index)
+        selectedInstances[index] = nil
+    end
+    
+    InstanceCounter_UpdateDisplay()
+end
+
+-- Function to toggle instance selection
+InstanceCounter_ToggleInstanceSelection = function(index)
+    if selectedInstances[index] then
+        selectedInstances[index] = nil
+    else
+        selectedInstances[index] = true
+    end
     InstanceCounter_UpdateDisplay()
 end
 
@@ -140,29 +169,55 @@ InstanceCounter_UpdateDisplay = function()
     for i, entry in ipairs(InstanceCounterDB.history) do
         local line = lines[i]
         if not line then
-            line = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            -- Create a frame to hold the checkbox and text
+            line = CreateFrame("Frame", "InstanceCounterLine"..i, scrollChild)
             lines[i] = line
             if i == 1 then
                 line:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, 0)
             else
                 line:SetPoint("TOPLEFT", lines[i-1], "BOTTOMLEFT", 0, -2)
             end
+            
+            -- Set size
+            line:SetWidth(220)
+            line:SetHeight(16)
+            
+            -- Create checkbox
+            local checkbox = CreateFrame("CheckButton", "InstanceCounterCheckbox"..i, line, "UICheckButtonTemplate")
+            checkbox:SetPoint("LEFT", 0, 0)
+            checkbox:SetSize(16, 16)
+            checkbox:SetScript("OnClick", function()
+                InstanceCounter_ToggleInstanceSelection(i)
+                PlaySound("IG_MAINMENU_OPTION_CHECKBOX_ON")
+            end)
+            line.checkbox = checkbox
+            
+            -- Create text string
+            local text = line:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            text:SetPoint("LEFT", checkbox, "RIGHT", 4, 0)
+            line.text = text
         end
+        
         -- Skip RDF instances from display in main window
         if IsRDFInstance(entry.name, entry.difficultyID) then
             line:Hide()
         else
             local timeString = date("%H:%M:%S", entry.time)
-            line:SetText(string.format("%d. [%s] %s", i, timeString, entry.name or "Unknown"))
+            local displayText = string.format("%d. [%s] %s", i, timeString, entry.name or "Unknown")
             
             -- Apply color coding based on time elapsed
             local r, g, b, a = GetTimeColor(entry.time)
-            line:SetTextColor(r, g, b, a)
             
             -- Add approval indicator if approved
             if IsInstanceApproved(entry) then
-                line:SetText(line:GetText() .. " ✓")
+                displayText = displayText .. " ✓"
             end
+            
+            line.text:SetText(displayText)
+            line.text:SetTextColor(r, g, b, a)
+            
+            -- Set checkbox state
+            line.checkbox:SetChecked(selectedInstances[i] or false)
             
             line:Show()
         end
@@ -179,6 +234,7 @@ end
 InstanceCounter_ClearInstances = function()
     sessionCount = 0
     InstanceCounterDB.history = {}
+    selectedInstances = {}
     InstanceCounter_UpdateDisplay()
 end
 

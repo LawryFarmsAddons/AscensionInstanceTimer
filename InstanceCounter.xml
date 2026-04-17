@@ -2,9 +2,9 @@
 
   <!-- Main Window -->
   <Frame name="InstanceCounterMainFrame" parent="UIParent" hidden="true" movable="true">
-<Size>
-  <AbsDimension x="260" y="300"/>
-</Size>
+  <Size>
+    <AbsDimension x="260" y="350"/>
+  </Size>
     <Anchors>
       <Anchor point="CENTER"/>
     </Anchors>
@@ -45,7 +45,7 @@
 <!-- Scrolling list of instances -->
 <ScrollFrame name="InstanceCounterScrollFrame" inherits="UIPanelScrollFrameTemplate">
   <Size>
-    <AbsDimension x="240" y="200"/>
+    <AbsDimension x="240" y="250"/>
   </Size>
   <Anchors>
     <Anchor point="TOPLEFT">
@@ -65,24 +65,43 @@
     </Frame>
   </ScrollChild>
 </ScrollFrame>
-       <!-- Clear button -->
-       <Button name="InstanceCounterClearButton" inherits="UIPanelButtonTemplate" text="Clear">
-         <Size>
-           <AbsDimension x="80" y="22"/>
-         </Size>
-         <Anchors>
-           <Anchor point="BOTTOM">
-             <Offset>
-               <AbsDimension x="-85" y="10"/>
-             </Offset>
-           </Anchor>
-         </Anchors>
-         <Scripts>
-           <OnClick>
-             InstanceCounter_ClearInstances();
-           </OnClick>
-         </Scripts>
-       </Button>
+        <!-- Delete Selected button -->
+        <Button name="InstanceCounterDeleteSelectedButton" inherits="UIPanelButtonTemplate" text="Delete">
+          <Size>
+            <AbsDimension x="80" y="22"/>
+          </Size>
+          <Anchors>
+            <Anchor point="BOTTOM">
+              <Offset>
+                <AbsDimension x="5" y="45"/>
+              </Offset>
+            </Anchor>
+          </Anchors>
+          <Scripts>
+            <OnClick>
+              InstanceCounter_DeleteSelectedInstances();
+            </OnClick>
+          </Scripts>
+        </Button>
+        
+        <!-- Clear button -->
+        <Button name="InstanceCounterClearButton" inherits="UIPanelButtonTemplate" text="Clear Session">
+          <Size>
+            <AbsDimension x="80" y="22"/>
+          </Size>
+          <Anchors>
+            <Anchor point="BOTTOM">
+              <Offset>
+                <AbsDimension x="5" y="12"/>
+              </Offset>
+            </Anchor>
+          </Anchors>
+          <Scripts>
+            <OnClick>
+              InstanceCounter_ClearInstances();
+            </OnClick>
+          </Scripts>
+        </Button>
        
        <!-- Approve button for each instance (will be dynamically created) -->
        
